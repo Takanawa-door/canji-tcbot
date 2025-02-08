@@ -14,6 +14,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from os import getenv
 from msvcrt import getwch
 
+WEB_DRIVER = webdriver.Edge
+
 def NextStep(msg: str = ""):
     if len(msg) > 0:
         print(f"{color.Back.BLACK}{color.Fore.WHITE}{msg}{color.Style.RESET_ALL}\n", end = "")
@@ -75,7 +77,7 @@ class Message:
         self.time = time
 
 class ChatPanel:
-    def __init__(self, driver: webdriver.Edge):
+    def __init__(self, driver: WEB_DRIVER):
         self.driver = driver
 
         self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea')
@@ -209,7 +211,7 @@ class Robot:
         self.chatPanel = ChatPanel(self.driver)
 
     def Run(self):
-        self.driver = webdriver.Edge()
+        self.driver = WEB_DRIVER()
         self.driver.get(self.tailchat.rootPath)
 
         NextStep("SignIn()")
@@ -233,7 +235,7 @@ class Robot:
         self.driver.quit()
 
     def TestGetMessages(self):
-        self.driver = webdriver.Edge()
+        self.driver = WEB_DRIVER()
         self.driver.get(getenv("chatPanelTestPage"))
         NextStep("InitChatPanel()")
         self.InitChatPanel()
