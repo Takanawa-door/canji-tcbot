@@ -16,7 +16,7 @@
 ```powershell
 $env:botEmail = "..."
 $env:botPassword = "..."
-$env:chatPanelTestPage = "file:///项目根目录/mhtml/ChatPanelDemon.mhtml"
+$env:chatPanelTestPage = "file://项目根目录/mhtml/ChatPanelDemon.mhtml"
 
 python robot.py
 ```
