@@ -1,85 +1,11 @@
-# Robot.py!
-# Robot settings should be in environment variables.
-# WARNING: Tailchat 随时可能出现 Break Change，所以这个脚本不一定可以长久工作。（草）
-
-import pdb
-
-import traceback
-import colorama as color
-from time import sleep
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from os import getenv
-from msvcrt import getwch
-
-WEB_DRIVER = webdriver.Edge
-
-def NextStep(msg: str = ""):
-    if len(msg) > 0:
-        print(f"{color.Back.BLACK}{color.Fore.WHITE}{msg}{color.Style.RESET_ALL}\n", end = "")
-    print(">> Wait for a key to continue...")
-    res = getwch()
-    if res == '\3':
-        print("!Ctrl + C Exit")
-        exit()
-    return res
-
-def waitUntilElementFound(driver, by, value, timeout = 10):
-    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, value)))
-
-def findElement(driver, by, value):
-    try:
-        return driver.find_element(by, value)
-    except:
-        return None
-
-def highlightElement(driver, element):
-    # 获取元素的原始背景颜色
-    original_background_color = element.value_of_css_property("background-color")
-
-    # 设置高亮样式
-    highlight_style = "border: 2px solid red; outline: 2px solid red;"
-
-    # 应用高亮样式
-    driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, highlight_style)
-
-    sleep(1)
-
-    # 恢复原始背景颜色
-    driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, original_background_color)
-
-def JoinPath(*args):
-    result = ""
-    # 遍历每一项
-    isStart = True
-    for arg in args:
-        if isStart:
-            result = arg
-            if result[len(result) - 1] == "/":
-                result = result[:len(result) - 1]
-            isStart = False
-            continue
-        if arg.startswith("/"):
-            arg = arg[1:]
-        result += "/" + arg
-    return result
-
-class Tailchat:
-    def __init__(self, rootPath: str):
-        self.rootPath = rootPath
-
-class Message:
-    def __init__(self, content: str, userName: str, time: str):
-        self.content = content
-        self.userName = userName
-        self.time = time
+from basic import *
+from robot import *
 
 class ChatPanel:
     def __init__(self, driver: WEB_DRIVER):
         self.driver = driver
 
+    def InitElements(self):
         self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea')
         self.actions = webdriver.ActionChains(self.driver)
         self.contentBoxXPath = '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]'
@@ -176,44 +102,31 @@ class ChatPanel:
     def WaitForNewMessage(self, callBack):
         pass
 
-class Robot:
-    def __init__(self, email: str, password: str):
-        self.tailchat = Tailchat("https://nightly.paw.msgbyte.com")
-        self.tailchat.controlPanel = '/main/group/67933ad81c1f93773739da0b/67933ad81c1f93773739da0a'
+class ChatRobot(Robot):
+    """
+    聊天机器人。
 
-        self.driver = None
-        self.email = email
-        self.password = password
-        self.chatPanel = None
+    启动方法：
+    1. 初始化 ChatRobot 实例。
+    2. 使用 GoToPage() 方法进入聊天面板。
+    3. 调用 InitOnPage() 方法。
+    """
 
-    def SignIn(self):
-        """
-        登录 Tailchat。
-        """
-
-        emailInput = self.driver.find_element(By.NAME, "login-email")
-        passwordInput = self.driver.find_element(By.NAME, "login-password")
-        loginButton = self.driver.find_element(By.XPATH, '//*[@id="tailchat-app"]/div/div[1]/div/div[2]/button[1]')
-        emailInput.send_keys(self.email)
-        passwordInput.send_keys(self.password)
-        loginButton.click()
-
-    def PassTutorial(self):
-        """
-        跳过 Tailchat 默认教程。
-        """
-        # 检查按钮是否存在
-        # closeButton = self.driver.find_element(By.CLASS_NAME, "shepherd-button-secondary")
-        closeButton = waitUntilElementFound(self.driver, By.CLASS_NAME, "shepherd-button-secondary")
-        closeButton.click()
-
-    def InitChatPanel(self):
+    def __init__(self, email, password, tailchat):
+        super().__init__(email, password, tailchat)
         self.chatPanel = ChatPanel(self.driver)
 
-    def Run(self):
-        self.driver = WEB_DRIVER()
-        self.driver.get(self.tailchat.rootPath)
+    def InitOnPage(self):
+        """
+        初始化 ChatPanel。
+        注意：在调用此函数之前，请确保已经登录并进入聊天页面。
+        """
+        self.chatPanel.InitElements()
 
+    def Run(self):
+        """
+        自动化运行机器人。
+        """
         NextStep("SignIn()")
         self.SignIn()
         NextStep("PassTutorial()")
@@ -221,8 +134,6 @@ class Robot:
         self.driver.get(JoinPath(self.tailchat.rootPath, self.tailchat.controlPanel))
 
         # 发送测试信息
-        NextStep("InitChatPanel()")
-        self.InitChatPanel()
         NextStep("SendMessage()")
         self.chatPanel.SendMessage("人机登录成功。")
         NextStep("GetMessage()")
@@ -231,28 +142,9 @@ class Robot:
         NextStep("结束")
         self.Quit()
 
-    def Quit(self):
-        self.driver.quit()
 
     def TestGetMessages(self):
-        self.driver = WEB_DRIVER()
-        self.driver.get(getenv("chatPanelTestPage"))
-        NextStep("InitChatPanel()")
-        self.InitChatPanel()
         NextStep("GetMessages()")
         self.chatPanel.GetMessages()
         NextStep("Done")
         self.Quit()
-
-
-if __name__ == '__main__':
-    color.init(wrap = True)
-    robot = Robot(getenv("botEmail"), getenv("botPassword"))
-    try:
-        robot.TestGetMessages()
-    except SystemExit:
-        pass
-    except:
-        traceback.print_exc()
-
-    robot.Quit()

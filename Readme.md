@@ -1,12 +1,13 @@
 # 残疾 Tailchat Bot
 
-> 你若三东来，换我一城雪白，想吃广东菜，轻轻摇曳在天边的精彩，化作眼泪哭着醒来
-
 这是一个正在进行的、基于模拟用户网页操作的 Tailchat 机器人。目前只会发送文本信息。
 
-## 依赖
+正在处理获取信息的问题。
 
-- Selenium
+## 依赖库
+
+- Selenium。
+- Colorama。
 - *Edge Driver: 对于复现，请将 Driver 修改为本地 Driver。在 `robot.py` 的第 17 行修改 `WEB_DRIVER` 的值。
 
 ## 启动
@@ -17,8 +18,10 @@
 $env:botEmail = "..."
 $env:botPassword = "..."
 $env:chatPanelTestPage = "file://项目根目录/mhtml/ChatPanelDemon.mhtml"
+$env:tailchatUrl = "https://nightly.paw.msgbyte.com" # 可以修改
+$env:controlPanel = "" # 聊天机器人需要控制的面板，参考：/main/group/xxx
 
-python robot.py
+python ./src/launcher.py
 ```
 
 由于目前仍然在测试获取消息功能，所以在 robot.py 末尾中，大约第 252 行，将代码从 `robot.TestGetMessages()` 修改为
