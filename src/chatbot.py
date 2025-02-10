@@ -143,8 +143,22 @@ class ChatPanel:
 
         return None
 
-    def WaitForNewMessage(self, callBack):
-        pass
+    def WaitForNewMessage(self, timeBreak = 0.1) -> MessageType:
+        """
+        等待新消息，当有新消息时，返回消息。会阻塞当前线程！
+
+        timeBreak：每次等待时间，单位：秒。
+        """
+
+        self.UpdateMessages()
+        originalMessageCount = self.CountMessages()
+        
+        while True:
+            self.UpdateMessages()
+            if (self.CountMessages() > originalMessageCount):
+                return self.GetLastMessage()
+
+            sleep(timeBreak)
 
 class ChatRobot(Robot):
     """
