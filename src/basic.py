@@ -3,6 +3,7 @@
 import colorama as color
 from os import getenv
 import traceback
+from typing import Union
 from msvcrt import getwch
 from time import sleep
 from selenium import webdriver
@@ -121,7 +122,8 @@ class MemberOperateMessage(SystemMessage):
     加入消息。
     """
 
-    def __init__(self, userName: str = "", time: str = "", kind: str = ""):
+    def __init__(self, userName: str = "", time: str = "", kind: str = "",
+                 originalText: str = ""):
         """
         尼玛硬编码。
         kind: "Join" or "Leave" or "Kick" <=>
@@ -130,3 +132,6 @@ class MemberOperateMessage(SystemMessage):
         self.userName = userName
         self.time = time
         self.kind = kind
+        self.originalText = originalText
+
+MessageType = Union[UserMessage, SystemMessage, MemberOperateMessage]
