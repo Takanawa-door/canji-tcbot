@@ -3,6 +3,7 @@ from robot import *
 from shlex import split as SplitAsCommand
 from functools import wraps
 import threading
+import time
 
 class ChatPanel:
     def __init__(self, driver: WEB_DRIVER):
@@ -15,9 +16,11 @@ class ChatPanel:
         初始化面板，获取输入框等元素。
         """
 
-        self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea')
+        self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea', 200)
         self.actions = webdriver.ActionChains(self.driver)
         self.contentBoxXPath = '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]'
+        self.messages = []
+        self.inputBoxLock.acquire()
 
     def SendMessage(self, msg: str):
         """
@@ -154,17 +157,22 @@ class ChatPanel:
 
         return None
 
-    def WaitForNewMessage(self, timeBreak = 0.1) -> MessageType:
+    def WaitForNewMessage(self, timeBreak = 0.1, timeLimit = 10) -> MessageType:
         """
         等待新消息，当有新消息时，返回消息。会阻塞当前线程！
 
         timeBreak：每次等待时间，单位：秒。
+        timeLimit：等待时间上限，单位：秒。设置为 0 即无限制（不建议）。
         """
 
         self.UpdateMessages()
         originalMessageCount = self.CountMessages()
         
+        startTime = time.time()
         while True:
+            curTime = time.time()
+            if timeLimit != 0 and curTime - startTime >= timeLimit:
+                return None
             self.UpdateMessages()
             if (self.CountMessages() > originalMessageCount):
                 return self.GetLastMessage()
@@ -188,6 +196,9 @@ class ChatRobot(Robot):
         self.availableFunctions = {}
 
     def StartDriver(self):
+        """
+        启动浏览器。
+        """
         super().StartDriver()
         self.chatPanel.driver = self.driver
 
