@@ -2,7 +2,7 @@
 from basic import *
 
 class Robot:
-    def __init__(self, email: str, password: str, tailchat: Tailchat):
+    def __init__(self, email: str, password: str, tailchat: Tailchat): 
         """
         机器人父类。
         """
@@ -12,6 +12,9 @@ class Robot:
         self.password = password
 
     def GoToPage(self, url: str):
+        """
+        跳转到指定页面。
+        """
         self.driver.get(url)
 
     def SignIn(self):

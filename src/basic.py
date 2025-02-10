@@ -1,7 +1,5 @@
 # basic.py
 # 存放着一些通用的函数、类型，例如调试句、元素获取句。
-# 你去到那个 Seesion Chat 里问……
-# 建议你写一下：这个不用写，第三方库
 import colorama as color
 from os import getenv
 import traceback
@@ -17,34 +15,33 @@ WEB_DRIVER = webdriver.Edge
 
 def NextStep(msg: str = ""):
     """
-    调试。
+    调试，按下任意键后继续执行。
     """
-    # 如果提供了msg参数，并且msg的长度大于0，打印出msg内容并设置背景颜色为黑色，文字颜色为白色
+
     if len(msg) > 0:
         print(f"{color.Back.BLACK}{color.Fore.WHITE}{msg}{color.Style.RESET_ALL}\n", end = "")
-    # 打印提示信息，提示用户按任意键继续
     print(">> Wait for a key to continue...")
     
-    # 调用getwch()函数等待用户输入一个字符
     res = getwch()
     
-    # 如果用户输入的是Ctrl + C（即'\3'），则退出程序并打印提示信息
     if res == '\3':
         print("!Ctrl + C Exit")
         exit()
-    # 返回用户输入的字符
+
     return res
 
 def waitUntilElementFound(driver, by, value, timeout = 10):
     """
     等到元素加载才返回。
     """
+
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, value)))
 
 def findElement(driver, by, value):
     """
     不抛出异常查找元素。
     """
+
     try:
         return driver.find_element(by, value)
     except:
@@ -93,14 +90,43 @@ class Tailchat:
     """
     Tailchat 信息。
     """
+
     def __init__(self, rootPath: str):
         self.rootPath = rootPath
 
-class Message:
+class UserMessage:
     """
     消息。
     """
-    def __init__(self, content: str, userName: str, time: str):
+
+    def __init__(self, content: str = "", userName: str = "", time: str = ""):
         self.content = content
         self.userName = userName
         self.time = time
+
+class SystemMessage:
+    """
+    系统消息。
+    """
+
+    def __init__(self, time: str = ""):
+        self.time = time
+
+MEMBER_JOIN_MESSAGE = "Join"
+MEMBER_LEAVE_MESSAGE = "Leave"
+MEMBER_KICK_MESSAGE = "Kick"
+
+class MemberOperateMessage(SystemMessage):
+    """
+    加入消息。
+    """
+
+    def __init__(self, userName: str = "", time: str = "", kind: str = ""):
+        """
+        尼玛硬编码。
+        kind: "Join" or "Leave" or "Kick" <=>
+              MEMBER_JOIN_MESSAGE or MEMBER_LEAVE_MESSAGE or MEMBER_KICK_MESSAGE.
+        """
+        self.userName = userName
+        self.time = time
+        self.kind = kind

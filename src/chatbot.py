@@ -6,34 +6,39 @@ class ChatPanel:
         self.driver = driver
 
     def InitElements(self):
+        """
+        初始化面板，获取输入框等元素。
+        """
         self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea')
         self.actions = webdriver.ActionChains(self.driver)
         self.contentBoxXPath = '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]'
-        self.contentBox = self.driver.find_element(By.XPATH, self.contentBoxXPath)
 
     def SendMessage(self, msg: str):
-        # Perhaps no problems while sending messages
+        """
+        发送消息，仅限单行。
+        """
         self.inputBox.send_keys(msg + '\n')
 
-    def GetMessages(self):
-        messages = []
-        highlightElement(self.driver, self.contentBox)
+    def GetMessages(self) -> list:
+        """
+        获取消息。返回一个列表，具有面板下所有消息。
 
-        # 草最喜欢重写了
-        contentBoxDiv = self.contentBox.find_elements(By.TAG_NAME, "div")
+        [WARNING] 这是一个臃肿不堪的函数，肯定会重构的。
+
+        返回值：list 可能元素类型：
+        Message & MemberOperateMessage
+        """
+        messages = []
+        contentBoxDiv = self.driver.find_elements(By.XPATH, f"{self.contentBoxXPath}/div")
+        lastMessageSender = ""
+        print(f"ContentBoxDiv: {len(contentBoxDiv)}")
         # for element in contentBoxDiv:
         for i in range(1, len(contentBoxDiv) + 1):
-            element = contentBoxDiv[i]
             elementXPath = self.contentBoxXPath + f"/div[{i}]"
-            highlightElement(self.driver, element)
             try:
                 # 展开到下级 Div
-                # 以下过程全是魔法
-                # 对照 MAD.PNG
-
                 # Major XPATH
                 # Chatbox:
-                # //*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]
                 # //*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]
                 # (In Chatbox...) For each message:
                 # element
@@ -51,45 +56,75 @@ class ChatPanel:
                 # CONTENT/div[1]  /div[0]/div[0]  /span[0]
                 # I hope it works
 
+                NextStep(f"Starting {i}: {elementXPath}")
+
+                # 此往下 3 个 div 并在一起
                 majorXPath = elementXPath + '/div[last()]/div[1]'
                 major = self.driver.find_element(By.XPATH, majorXPath)
 
-                contentElementXPath = majorXPath + '/div[2]'
-                contentElement = self.driver.find_element(By.XPATH, contentElementXPath)
+                # 判断是否为系统信息
+                # systemMessage 即进入消息元素，找得到（返回值非 None）则是。
+                systemMessage = findElement(major, By.CLASS_NAME, "bg-black")
 
-                userNameElementXPath = contentElementXPath + '/div[1]/div[1]'
-                #userNameElement = self.driver.find_element(By.XPATH, userNameElementXPath)
-                userNameElement = None
+                if systemMessage is not None:
+                    # TODO: 完成系统信息处理。
+                    Aa654321 = systemMessage.get_attribute("textContent")
+                    messages.append(UserMessage(Aa654321, "", ""))
+                    continue
 
-                timeElementXPath = contentElementXPath + '/div[1]/div[2]'
-                #timeElement = self.driver.find_element(By.XPATH, timeElementXPath)
-                timeElement = None
-
-                messageElementXPath = contentElementXPath + '/div[2]/div[1]/div[1]/span[1]'
-                messageElementXPath = contentElementXPath + '/div[1]/div/div/span'
-                messageElement = self.driver.find_element(By.XPATH, messageElementXPath)
-
-                avatarElementXPath = majorXPath + '/div[1]/span[1]/img[1]'
-                #avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
+                # 声明
+                avatarElementXPath = None
                 avatarElement = None
+                userNameElementXPath = None
+                userNameElement = None
+                timeElementXPath = None
+                timeElement = None
+                messageElementXPath = None
+                messageElement = None
+                currentMessage = UserMessage()
 
+                # 定义曰：带有头像的消息为“头消息（Header）”，不带的为“属消息（NonHeader）”。
+                # 要区分头消息与属消息，最简单的方法是判断左侧位置是否有头像 Img。
+                # 如果有，则为头消息，否则为属消息。
+                leftZoomElementXPath = f"{majorXPath}/div[1]"
+                isHeader = True if findElement(self.driver, By.XPATH, leftZoomElementXPath + "/span") else False
 
-                print(f"----------",
-                      f"userName: {userNameElementXPath}",
-                      f"time: {timeElementXPath}",
-                      f"message: {messageElementXPath}",
-                      f"",
-                      f"userName: {userNameElement}",
-                      f"time: {timeElement}",
-                      f"message: {messageElement.text}",
-                      f"----------",
-                      sep='\n')
-                NextStep()
+                if isHeader:
+                    avatarElementXPath = f"{leftZoomElementXPath}/span/img"
+                    avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
+                    avatarSource = avatarElement.get_attribute("src")
+
+                    userNameElementXPath = f"{majorXPath}/div[2]/div/div"
+                    timeElementXPath     = f"{majorXPath}/div[2]/div/div[2]"
+                    messageElementXPath  = f"{majorXPath}/div[2]/div[2]/div/div/span"
+
+                    userNameElement = self.driver.find_element(By.XPATH, userNameElementXPath)
+                    timeElement     = self.driver.find_element(By.XPATH, timeElementXPath)
+                    messageElement  = self.driver.find_element(By.XPATH, messageElementXPath)
+
+                    currentMessage.userName = userNameElement.get_attribute("textContent")
+                    currentMessage.content = messageElement.get_attribute("textContent")
+                    currentMessage.time = timeElement.get_attribute("textContent")
+                    lastMessageSender = currentMessage.userName
+
+                else:
+                    timeElementXPath = f"{leftZoomElementXPath}/div"
+                    messageElementXPath = f"{majorXPath}/div[2]/div/div/div/span"
+
+                    timeElement = self.driver.find_element(By.XPATH, timeElementXPath)
+                    messageElement = self.driver.find_element(By.XPATH, messageElementXPath)
+
+                    currentMessage.userName = lastMessageSender
+                    currentMessage.content = messageElement.get_attribute("textContent")
+                    currentMessage.time = timeElement.get_attribute("textContent")
+
+                print(f"{currentMessage.userName} at {currentMessage.time}: {currentMessage.content}")
+
+                messages.append(currentMessage)
             except:
                 traceback.print_exc()
                 NextStep()
                 continue
-
 
         return messages
 
@@ -144,6 +179,9 @@ class ChatRobot(Robot):
 
 
     def TestGetMessages(self):
+        """
+        测试获取消息功能。
+        """
         NextStep("GetMessages()")
         self.chatPanel.GetMessages()
         NextStep("Done")
