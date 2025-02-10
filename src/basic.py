@@ -10,6 +10,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
 
 # 机器人使用的 WebDriver，根据实际情况而定
 WEB_DRIVER = webdriver.Edge
@@ -86,14 +87,6 @@ def JoinPath(*args):
             arg = arg[1:]
         result += "/" + arg
     return result
-
-class Tailchat:
-    """
-    Tailchat 信息。
-    """
-
-    def __init__(self, rootPath: str):
-        self.rootPath = rootPath
 
 class UserMessage:
     """

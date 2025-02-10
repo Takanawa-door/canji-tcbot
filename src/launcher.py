@@ -5,14 +5,8 @@ from chatbot import *
 if __name__ == '__main__':
     color.init(wrap = True)
 
-    tailchat = Tailchat(getenv("tailchatUrl"))
-    robot = ChatRobot(getenv("botEmail"), getenv("botPassword"), tailchat)
-
+    robot = ChatRobot(getenv("botEmail"), getenv("botPassword"))
     try:
-        robot.GoToPage(getenv("chatPanelTestPage"))
-        robot.InitOnPage()
-        robot.TestGetMessages()
-    except SystemExit:
         pass
     except:
         traceback.print_exc()

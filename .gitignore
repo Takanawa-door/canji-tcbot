@@ -3,3 +3,4 @@ new.txt
 test.py
 launch.ps1
 src/__pycache__/
+src/ezbot.py

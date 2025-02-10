@@ -1,10 +1,14 @@
 from basic import *
 from robot import *
+from shlex import split as SplitAsCommand
+from functools import wraps
+import threading
 
 class ChatPanel:
     def __init__(self, driver: WEB_DRIVER):
         self.driver = driver
         self.messages = []
+        self.inputBoxLock = threading.Lock()
 
     def InitElements(self):
         """
@@ -20,7 +24,14 @@ class ChatPanel:
         发送消息，仅限单行。
         """
 
-        self.inputBox.send_keys(msg + '\n')
+        self.inputBoxLock.acquire()
+        lines = msg.splitlines()
+        for i in lines:
+            self.inputBox.send_keys(i)
+            if id(i) != id(lines[-1]):
+                self.inputBox.send_keys(Keys.SHIFT, '\n')
+        self.inputBox.send_keys(Keys.ENTER)
+        self.inputBoxLock.release()
 
     def CountMessages(self) -> int:
         """
@@ -68,9 +79,9 @@ class ChatPanel:
         isHeader = True if findElement(self.driver, By.XPATH, leftZoomElementXPath + "/span") else False
 
         if isHeader:
-            avatarElementXPath = f"{leftZoomElementXPath}/span/img"
-            avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
-            avatarSource = avatarElement.get_attribute("src")
+            # avatarElementXPath = f"{leftZoomElementXPath}/span/img"
+            # avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
+            # avatarSource = avatarElement.get_attribute("src")
 
             userNameElementXPath = f"{majorXPath}/div[2]/div/div"
             timeElementXPath     = f"{majorXPath}/div[2]/div/div[2]"
@@ -166,13 +177,19 @@ class ChatRobot(Robot):
 
     启动方法：
     1. 初始化 ChatRobot 实例。
-    2. 使用 GoToPage() 方法进入聊天面板。
-    3. 调用 InitOnPage() 方法。
+    2. 调用 StartDriver() 方法开启浏览器。
+    3. 使用 GoToPage() 方法进入聊天面板。
+    4. 调用 InitOnPage() 方法。
     """
 
-    def __init__(self, email, password, tailchat):
-        super().__init__(email, password, tailchat)
+    def __init__(self, email, password):
+        super().__init__(email, password)
         self.chatPanel = ChatPanel(self.driver)
+        self.availableFunctions = {}
+
+    def StartDriver(self):
+        super().StartDriver()
+        self.chatPanel.driver = self.driver
 
     def InitOnPage(self):
         """
@@ -182,36 +199,36 @@ class ChatRobot(Robot):
         
         self.chatPanel.InitElements()
 
-    def Run(self):
+    def RunCommand(self, command: str, frontArgs: list = [], backArgs: list = [], runInThreads: bool = False):
         """
-        自动化运行机器人。
-        """
-
-        NextStep("SignIn()")
-        self.SignIn()
-        NextStep("PassTutorial()")
-        self.PassTutorial()
-        self.driver.get(JoinPath(self.tailchat.rootPath, self.tailchat.controlPanel))
-
-        # 发送测试信息
-        NextStep("SendMessage()")
-        self.chatPanel.SendMessage("人机登录成功。")
-        NextStep("GetMessage()")
-        self.chatPanel.UpdateMessages()
-
-        NextStep("结束")
-        self.Quit()
-
-
-    def TestGetMessages(self):
-        """
-        测试获取消息功能。
+        运行命令。仅有被 @Command 装饰的函数才能被调用。
+        传入用户输入的命令，不带有命令前缀符号。
+        frontArgs, backArgs：若输入参数为 iArgs，则实际函数调用为 func(*frontArgs, *iArgs, *backArgs)。
+        runInThreads：是否在子线程中运行。默认为 False。
         """
 
-        NextStep("GetMessages()")
-        print(f"Count: {self.chatPanel.CountMessages()}")
-        print(f"Get Single Message: {self.chatPanel.GetMessage(1)}")
-        self.chatPanel.UpdateMessages()
-        print(self.chatPanel.GetLastMessage(True).content)
-        NextStep("Done")
-        self.Quit()
+        struct = SplitAsCommand(command)
+        funcName = struct[0]
+        args = []
+        if len(struct) > 1:
+            args = struct[1:]
+
+        if funcName not in self.availableFunctions:
+            return -1
+
+        if runInThreads:
+            threading.Thread(target=self.availableFunctions[funcName], args= frontArgs + args + backArgs).start()
+        else:
+            self.availableFunctions[funcName](*frontArgs, *args, *backArgs)
+
+    def Command(self, func: callable):
+        """
+        此装饰器可以将此函数标识为机器人可用函数。
+        注意：凡是被该装饰器装饰的函数，第一个参数必须是 userName！
+        """
+
+        self.availableFunctions[func.__name__] = func
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            return func(*args, **kwargs)
+        return wrapper
