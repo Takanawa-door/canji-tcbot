@@ -2,6 +2,8 @@ pictures/Snipaste_2025-02-07_14-29-23.png
 new.txt
 test.py
 launch.ps1
-src/__pycache__/
-src/ezbot.py
-src/launcher.py
+tcbot/__pycache__/
+tcbot/ezbot.py
+tcbot/launcher.py
+venv/
+tcbot.egg-info/

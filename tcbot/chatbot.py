@@ -1,5 +1,5 @@
-from basic import *
-from robot import *
+from .basic import *
+from .robot import *
 from shlex import split as SplitAsCommand
 from functools import wraps
 import threading
