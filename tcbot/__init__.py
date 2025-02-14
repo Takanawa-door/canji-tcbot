@@ -1,5 +1,5 @@
-from .robot import robot
-from .chatbot import chatbot
-from .launcher import launcher
+from . import basic as Basic
+from .robot import Robot
+from .chatbot import ChatRobot
 
-__all__ = ["robot", "chatbot", "launcher"]
+__all__ = ["Robot", "ChatRobot", "Basic"]

@@ -1,14 +1,17 @@
 # 起步指南
 
+> [!IMPORTANT]
+> 本页面等待完善。
+
 欢迎使用 Canji-TCBot，接下来我们将开始配置并运行一个聊天机器人。
+
+本教程中，我们将会让机器人操控已经创建的浏览器窗口，并且让它说话。
 
 ## 配置环境变量
 
-为了账号安全，通常在环境变量中存储账号密码；除此之外，我们还可以使用环境变量存储聊天页面方便机器人操作。以下是一个设置环境变量的 Powershell 脚本。
+通常为了方便，我们使用环境变量存储一些必要的信息，方便机器人操作。以下是一个设置环境变量的 Powershell 脚本。
 
 ```powershell
-$env:BotEmail = "xxx"
-$env:BotPassword = "xxx"
 # 设置登录需要的界面
 $env:LoginPage = "https://nightly.paw.msgbyte.com"
 # 设置机器人要操控的聊天界面
@@ -23,8 +26,7 @@ $env:ChatPage = "https://nightly.paw.msgbyte.com/xxx"
 
 ```python
 from os import getenv
-from tcbot.robot import *
-from tcbot.chatbot import *
+from tcbot import *
 
 robot = ChatRobot(getenv("BotEmail"), getenv("BotPassword"))
 

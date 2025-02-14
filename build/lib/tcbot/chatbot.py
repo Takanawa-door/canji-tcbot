@@ -157,12 +157,13 @@ class ChatPanel:
 
         return None
 
-    def WaitForNewMessage(self, timeBreak = 0.1, timeLimit = 10) -> MessageType:
+    def WaitForNewMessage(self, timeBreak = 0.1, timeLimit = 10) -> list[MessageType]:
         """
-        等待新消息，当有新消息时，返回消息。会阻塞当前线程！
+        等待新消息，当有新消息时，返回包含新消息的列表。会阻塞当前线程！
 
-        timeBreak：每次等待时间，单位：秒。
-        timeLimit：等待时间上限，单位：秒。设置为 0 即无限制（不建议）。
+        timeBreak: 每次等待时间，单位：秒。
+        timeLimit: 等待时间上限，单位：秒。设置为 0 即无限制（不建议）。
+                   NOTE: 由于 UpdateMessages() 的原因，实际等待时间可能超出 timeLimit 的值。
         """
 
         self.UpdateMessages()
@@ -175,7 +176,7 @@ class ChatPanel:
                 return None
             self.UpdateMessages()
             if (self.CountMessages() > originalMessageCount):
-                return self.GetLastMessage()
+                return self.messages[originalMessageCount:]
 
             sleep(timeBreak)
 
@@ -205,17 +206,20 @@ class ChatRobot(Robot):
     def InitOnPage(self):
         """
         初始化 ChatPanel。
-        注意：在调用此函数之前，请确保已经登录并进入聊天页面。
+        NOTE: 在调用此函数之前，请确保已经初始化 Driver（通过 StartDrvier() 方法），且已经登录并进入聊天页面。
         """
         
         self.chatPanel.InitElements()
 
-    def RunCommand(self, command: str, frontArgs: list = [], backArgs: list = [], runInThreads: bool = False):
+    def RunCommand(self, command: str, frontArgs: list = [], backArgs: list = [], runInThreads: bool = False) -> int:
         """
         运行命令。仅有被 @Command 装饰的函数才能被调用。
         传入用户输入的命令，不带有命令前缀符号。
-        frontArgs, backArgs：若输入参数为 iArgs，则实际函数调用为 func(*frontArgs, *iArgs, *backArgs)。
-        runInThreads：是否在子线程中运行。默认为 False。
+
+        当执行成功，返回 0。当命令为非法命令，返回 -1。此函数不处理内部异常。
+
+        frontArgs, backArgs: 若输入参数为 iArgs，则实际函数调用为 func(*frontArgs, *iArgs, *backArgs)。
+        runInThreads: 是否在子线程中运行。默认为 False。
         """
 
         struct = SplitAsCommand(command)
@@ -231,6 +235,8 @@ class ChatRobot(Robot):
             threading.Thread(target=self.availableFunctions[funcName], args= frontArgs + args + backArgs).start()
         else:
             self.availableFunctions[funcName](*frontArgs, *args, *backArgs)
+
+        return 0
 
     def Command(self, func: callable):
         """

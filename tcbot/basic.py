@@ -5,6 +5,7 @@ from os import getenv
 import traceback
 from typing import Union
 from msvcrt import getwch
+import warnings
 from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,8 +14,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement
 
+# 机器人使用的浏览器要有对应的 Options，根据实际情况而定
+from selenium.webdriver.edge.options import Options
+
 # 机器人使用的 WebDriver，根据实际情况而定
 WEB_DRIVER = webdriver.Edge
+DRIVER_OPTIONS = Options
 
 def NextStep(msg: str = ""):
     """

@@ -3,7 +3,8 @@ from .basic import *
 from selenium.webdriver.common.action_chains import ActionChains
 
 class Robot:
-    def __init__(self, email: str, password: str): 
+    def __init__(self, email: str = "", password: str = "", driverOptions: DRIVER_OPTIONS = DRIVER_OPTIONS(),
+                 robotName: str = "Bot"): 
         """
         机器人父类。
         启动浏览器需要用 StartDriver 方法！
@@ -13,13 +14,22 @@ class Robot:
         self.email = email
         self.password = password
         self.actionChains = ActionChains(self.driver)
+        self.driverOptions = driverOptions
+        self.robotName = robotName
+
+    def SetDebugAddress(self, debugAddress: str):
+        """
+        设置调试地址，即浏览器 Driver 使用的端口。
+        """
+
+        self.driverOptions.add_experimental_option("debuggerAddress", f"{debugAddress}")
 
     def StartDriver(self):
         """
         启动浏览器。 
         """
         
-        self.driver = WEB_DRIVER()
+        self.driver = WEB_DRIVER(options=self.driverOptions)
 
     def GoToPage(self, url: str):
         """
@@ -33,7 +43,7 @@ class Robot:
         登录 Tailchat。
         """
 
-        emailInput = waitUntilElementFound(self.driver, By.NAME, "login-email", 200)
+        emailInput = waitUntilElementFound(self.driver, By.NAME, "login-email", 10)
         passwordInput = self.driver.find_element(By.NAME, "login-password")
         loginButton = self.driver.find_element(By.XPATH, '//*[@id="tailchat-app"]/div/div[1]/div/div[2]/button[1]')
         emailInput.send_keys(self.email)
