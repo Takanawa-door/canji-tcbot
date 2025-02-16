@@ -9,3 +9,4 @@ venv/
 tcbot.egg-info/
 robotEdge.ps1
 usage/
+.vscode/

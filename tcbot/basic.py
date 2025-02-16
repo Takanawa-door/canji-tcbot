@@ -94,14 +94,21 @@ def JoinPath(*args):
         result += "/" + arg
     return result
 
+class UserInformation:
+    def __init__(self, name: str = "", identifier: str = ""):
+        self.name = name
+        self.id = identifier
+
 class UserMessage:
     """
     消息。
+
+    NOTE: self.userName 已被弃用并删除。
     """
 
-    def __init__(self, content: str = "", userName: str = "", time: str = ""):
+    def __init__(self, content: str = "", user: UserInformation = None, time: str = ""):
         self.content = content
-        self.userName = userName
+        self.user = user if user is not None else UserInformation()
         self.time = time
 
 class SystemMessage:

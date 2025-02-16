@@ -4,6 +4,7 @@ from shlex import split as SplitAsCommand
 from functools import wraps
 import threading
 import time
+import re
 
 class ChatPanel:
     def __init__(self, driver: WEB_DRIVER):
@@ -11,7 +12,25 @@ class ChatPanel:
         self.messages = []
         self.inputBoxLock = threading.Lock()
 
-        self.lastUserName = ""
+        self.lastUserName_Deleted = ""
+        self.lastUserID = ""
+        self.messages: list[MessageType] = []
+
+        # 记录 User ID 以及它们对应的用户名
+        self.idToUser: dict[str, str] = {}
+        # 保留用，记录用户名以及它们对应的 User ID
+        self.reservedUserToID: dict[str, str] = {}
+
+    def MatchUserIDFromAvatarUrl(self, url: str) -> str:
+        """
+        匹配头像文件中的用户名。
+
+        url 格式应该为：https://abcd.com/static/files/USERID/AnyPicture.Anything
+        """
+        return url.split('/')[-2]
+        # 保留用：
+        # matcher = re.compile(r"\/([^\/]+)\/([^\/]+)\/([^\/]+)\/([^\/]+)\.jpg")
+        # return self.userIDMatcherFromAvatarUrl.findall(url)[0][2]
 
     def InitElements(self):
         """
@@ -21,7 +40,6 @@ class ChatPanel:
         self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea', 10)
         self.actions = webdriver.ActionChains(self.driver)
         self.contentBoxXPath = '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]'
-        self.messages: list[MessageType] = []
 
     def SendMessage(self, msg: str, lockTimeout: float = 5):
         """
@@ -71,6 +89,8 @@ class ChatPanel:
         获取特定消息。
 
         msgID: 消息 ID，从 1 开始。本质上是 div 的索引。应当小于等于 CountMessages()。
+
+        NOTE: 对于非头消息，消息用户为空。
         """
 
         elementXPath = self.contentBoxXPath + f"/div[{msgID}]"
@@ -90,6 +110,7 @@ class ChatPanel:
         # 声明
         avatarElementXPath = None
         avatarElement = None
+        avatarSource = None
         userNameElementXPath = None
         userNameElement = None
         timeElementXPath = None
@@ -105,21 +126,27 @@ class ChatPanel:
         isHeader = True if findElement(self.driver, By.XPATH, leftZoomElementXPath + "/span") else False
 
         if isHeader:
-            # avatarElementXPath = f"{leftZoomElementXPath}/span/img"
-            # avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
-            # avatarSource = avatarElement.get_attribute("src")
-
             userNameElementXPath = f"{majorXPath}/div[2]/div/div"
             timeElementXPath     = f"{majorXPath}/div[2]/div/div[2]"
             messageElementXPath  = f"{majorXPath}/div[2]/div[2]/div/div/span"
 
             userNameElement = self.driver.find_element(By.XPATH, userNameElementXPath)
+            currentMessage.user.name = userNameElement.get_attribute("textContent")
             timeElement     = self.driver.find_element(By.XPATH, timeElementXPath)
-            messageElement  = self.driver.find_element(By.XPATH, messageElementXPath)
-
-            currentMessage.userName = userNameElement.get_attribute("textContent")
-            currentMessage.content = messageElement.get_attribute("textContent")
             currentMessage.time = timeElement.get_attribute("textContent")
+            messageElement  = self.driver.find_element(By.XPATH, messageElementXPath)
+            currentMessage.content = messageElement.get_attribute("textContent")
+
+            avatarElementXPath = f"{leftZoomElementXPath}/span/img"
+            try:
+                avatarElement = self.driver.find_element(By.XPATH, avatarElementXPath)
+                avatarSource = avatarElement.get_attribute("src")
+                currentMessage.user.id = self.MatchUserIDFromAvatarUrl(avatarSource)
+            except:
+                # 未设置头像的，试图从保留的用户中寻找
+                result = self.reservedUserToID.get(currentMessage.user.name, None)
+                if result is not None:
+                    currentMessage.user.id = result
 
         else:
             timeElementXPath = f"{leftZoomElementXPath}/div"
@@ -137,35 +164,41 @@ class ChatPanel:
         """
         刷新消息列表。返回一个列表，具有面板下所有消息。
 
-        startIndex: 指定从第几个 Div 开始搜索，下标从 1 开始，默认为 None，即从最后一个开始。
-                    NOTE: 如果制定了 startIndex，重复的消息不会被剔除。
+        startIndex: 指定从第几个 Div 开始搜索，下标从 1 开始，默认为 None，即从最新的消息开始。
+                    NOTE: 重复的消息不会被剔除。
 
         返回值：list 可能元素类型：
         Message & MemberOperateMessage
         """
 
+        # Something goes wrong here! TMD.
+        # 劳资他妈的 append 以后用户名怎么老是被改
+
         contentBoxDiv = self.driver.find_elements(By.XPATH, f"{self.contentBoxXPath}/div")
         for i in range(len(self.messages) + 1 if startIndex is None else startIndex,
                        len(contentBoxDiv) + 1):
-            try:
-                currentMessage = self.GetMessage(i)
-                if type(currentMessage) == UserMessage and currentMessage.userName == "":
-                    # 查找上一个名字非空的
-                    # for j in range(len(self.messages) - 1, -1, -1):
-                    #     if type(self.messages[j]) == UserMessage and self.messages[j].userName != "":
-                    #         currentMessage.userName = self.messages[j].userName
-                    #         break
-                    currentMessage.userName = self.lastUserName
-                self.lastUserName = currentMessage.userName
-                self.messages.append(currentMessage)
-            except:
-                if outputError: traceback.print_exc()
-                continue
+            # print(f"As for {i}:")
+            currentMessage = self.GetMessage(i)
+            if type(currentMessage) != UserMessage: continue
+            if type(currentMessage) == UserMessage and currentMessage.user.name == "":
+                # 查找上一个非空名字 & ID
+                # print(f"No name! Use {self.lastUserID}")
+                currentMessage.user.id = self.lastUserID
+                currentMessage.user.name = self.idToUser[currentMessage.user.id]
+            self.lastUserID = currentMessage.user.id
+            self.idToUser[currentMessage.user.id] = currentMessage.user.name
+            self.messages.append(currentMessage)
+            # print(f"[In Loop] {currentMessage.user.name}({currentMessage.user.id}) {currentMessage.content} {currentMessage.time}")
+            # print(f"[In Loop] {self.messages[-1].user.name}({self.messages[-1].user.id}) {self.messages[-1].content} {self.messages[-1].time}")
 
         return self.messages
 
-    def GetMessageFromUserName(self, userName: str):
-        pass
+    def AnalizeUserID(self, userName: str) -> str:
+        """
+        TODO: 分析用户名，返回用户 ID。
+        """
+
+        return ""
 
     def GetLastMessage(self, onlyForUser: bool = True) -> MessageType:
         """
