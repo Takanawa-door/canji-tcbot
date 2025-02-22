@@ -160,7 +160,7 @@ class ChatPanel:
 
         return currentMessage
 
-    def UpdateMessages(self, startIndex: int | None = None, outputError: bool = False) -> list:
+    def UpdateMessages(self, startIndex: int | None = None, outputError: bool = False) -> list[MessageType]:
         """
         刷新消息列表。返回一个列表，具有面板下所有消息。
 

@@ -10,4 +10,4 @@
 
 ## 使用
 
-详见 [起步指南](docs/Beginner.md)。
+请参阅文档：[文档](./docs/Index.md)。
