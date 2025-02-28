@@ -43,7 +43,7 @@ class Robot:
         登录 Tailchat。
         """
 
-        emailInput = waitUntilElementFound(self.driver, By.NAME, "login-email", 10)
+        emailInput = WaitUntilElementFound(self.driver, By.NAME, "login-email", 10)
         passwordInput = self.driver.find_element(By.NAME, "login-password")
         loginButton = self.driver.find_element(By.XPATH, '//*[@id="tailchat-app"]/div/div[1]/div/div[2]/button[1]')
         emailInput.send_keys(self.email)
@@ -55,7 +55,7 @@ class Robot:
         跳过 Tailchat 默认教程。
         """
 
-        closeButton = waitUntilElementFound(self.driver, By.CLASS_NAME, "shepherd-button-secondary")
+        closeButton = WaitUntilElementFound(self.driver, By.CLASS_NAME, "shepherd-button-secondary")
         closeButton.click()
 
     def Quit(self):

@@ -1,10 +1,8 @@
 # basic.py
 # 存放着一些通用的函数、类型，例如调试句、元素获取句。
-import colorama as color
 from os import getenv
 import traceback
 from typing import Union
-from msvcrt import getwch
 import warnings
 from time import sleep
 from selenium import webdriver
@@ -21,31 +19,14 @@ from selenium.webdriver.edge.options import Options
 WEB_DRIVER = webdriver.Edge
 DRIVER_OPTIONS = Options
 
-def NextStep(msg: str = ""):
-    """
-    调试，按下任意键后继续执行。
-    """
-
-    if len(msg) > 0:
-        print(f"{color.Back.BLACK}{color.Fore.WHITE}{msg}{color.Style.RESET_ALL}\n", end = "")
-    print(">> Wait for a key to continue...")
-    
-    res = getwch()
-    
-    if res == '\3':
-        print("!Ctrl + C Exit")
-        exit()
-
-    return res
-
-def waitUntilElementFound(driver, by, value, timeout = 10):
+def WaitUntilElementFound(driver, by, value, timeout = 10):
     """
     等到元素加载才返回。
     """
 
     return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, value)))
 
-def findElement(driver, by, value):
+def FindElement(driver, by, value):
     """
     不抛出异常查找元素。
     """
@@ -54,25 +35,6 @@ def findElement(driver, by, value):
         return driver.find_element(by, value)
     except:
         return None
-
-def highlightElement(driver, element):
-    """
-    高亮特定元素。
-    """
-
-    # 获取元素的原始背景颜色
-    original_background_color = element.value_of_css_property("background-color")
-
-    # 设置高亮样式
-    highlight_style = "border: 2px solid red; outline: 2px solid red;"
-
-    # 应用高亮样式
-    driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, highlight_style)
-
-    sleep(1)
-
-    # 恢复原始背景颜色
-    driver.execute_script("arguments[0].setAttribute('style', arguments[1]);", element, original_background_color)
 
 def JoinPath(*args):
     """

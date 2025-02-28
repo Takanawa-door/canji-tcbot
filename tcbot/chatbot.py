@@ -37,7 +37,7 @@ class ChatPanel:
         初始化面板，获取输入框等元素。
         """
 
-        self.inputBox = waitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea', 10)
+        self.inputBox = WaitUntilElementFound(self.driver, By.XPATH, '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[2]/div/div[1]/div/div/textarea', 10)
         self.actions = webdriver.ActionChains(self.driver)
         self.contentBoxXPath = '//*[@id="tailchat-app"]/div[1]/div/div[2]/div[2]/div[2]/div/div[1]/div[2]/div/div[1]/div[1]'
 
@@ -100,7 +100,7 @@ class ChatPanel:
 
         # 判断是否为系统信息
         # systemMessage 即进入消息元素，找得到（返回值非 None）则是。
-        systemMessage = findElement(major, By.CLASS_NAME, "bg-black")
+        systemMessage = FindElement(major, By.CLASS_NAME, "bg-black")
 
         if systemMessage is not None:
             # TODO: 完成系统信息处理。
@@ -123,7 +123,7 @@ class ChatPanel:
         # 要区分头消息与属消息，最简单的方法是判断左侧位置是否有头像 Img。
         # 如果有，则为头消息，否则为属消息。
         leftZoomElementXPath = f"{majorXPath}/div[1]"
-        isHeader = True if findElement(self.driver, By.XPATH, leftZoomElementXPath + "/span") else False
+        isHeader = True if FindElement(self.driver, By.XPATH, leftZoomElementXPath + "/span") else False
 
         if isHeader:
             userNameElementXPath = f"{majorXPath}/div[2]/div/div"
@@ -310,7 +310,6 @@ class ChatRobot(Robot):
     def Command(self, isPublicToEveryone: bool = True):
         """
         此装饰器可以将此函数标识为机器人可用函数。
-        NOTE: 凡是被该装饰器装饰的函数，第一个参数必须是 userName！
         NOTE: 装饰时，必须显示声明参数，否则无效。例如：@Command(True)。
 
         isPublicToEveryone: 是否希望此函数对所有用户公开。默认为 True。
